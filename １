@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>熱量紀錄系統（JS 物件 + localStorage）</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      padding: 20px;
+    }
+    .box {
+      max-width: 700px;
+      margin: auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,.1);
+    }
+    h1 {
+      text-align: center;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+    input, button {
+      padding: 8px;
+      margin-top: 5px;
+    }
+    button {
+      cursor: pointer;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background: #eee;
+    }
+    .del {
+      color: white;
+      background: #e53935;
+      border: none;
+      border-radius: 5px;
+      padding: 5px 10px;
+    }
+  </style>
+</head>
+
+<body>
+<div class="box">
+  <h1>🍱 熱量紀錄系統</h1>
+
+  <label>日期</label>
+  <input type="date" id="date">
+
+  <label>食物名稱</label>
+  <input type="text" id="food" placeholder="例如：雞胸肉">
+
+  <label>熱量（大卡）</label>
+  <input type="number" id="calories" placeholder="例如：165">
+
+  <button onclick="addRecord()">➕ 新增紀錄</button>
+
+  <table>
+    <thead>
+      <tr>
+        <th>日期</th>
+        <th>食物</th>
+        <th>熱量</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody id="list"></tbody>
+  </table>
+
+  <h3 id="total"></h3>
+</div>
+
+<script>
+/********************************
+ * JS 物件資料庫（localStorage）
+ ********************************/
+const STORAGE_KEY = 'calorie_records';
+
+const database = {
+  records: JSON.parse(localStorage.getItem(STORAGE_KEY)) || []
+};
+
+function saveToStorage() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(database.records));
+}
+
+/********************************
+ * 新增紀錄
+ ********************************/
+function addRecord() {
+  const date = document.getElementById('date').value;
+  const food = document.getElementById('food').value;
+  const calories = Number(document.getElementById('calories').value);
+
+  if (!date || !food || !calories) {
+    alert('請完整輸入 日期、食物、熱量');
+    return;
+  }
+
+  database.records.push({
+    id: Date.now(),   // 當作唯一 ID
+    date,
+    food,
+    calories
+  });
+
+  saveToStorage();
+
+  document.getElementById('food').value = '';
+  document.getElementById('calories').value = '';
+
+  render();
+}
+
+/********************************
+ * 刪除紀錄
+ ********************************/
+function deleteRecord(id) {
+  database.records = database.records.filter(r => r.id !== id);
+  saveToStorage();
+  render();
+}
+
+/********************************
+ * 顯示資料 + 總熱量
+ ********************************/
+function render() {
+  const tbody = document.getElementById('list');
+  const selectedDate = document.getElementById('date').value;
+
+  tbody.innerHTML = '';
+  let total = 0;
+
+  database.records
+    .filter(r => !selectedDate || r.date === selectedDate)
+    .forEach(r => {
+      total += r.calories;
+      tbody.innerHTML += `
+        <tr>
+          <td>${r.date}</td>
+          <td>${r.food}</td>
+          <td>${r.calories}</td>
+          <td>
+            <button class="del" onclick="deleteRecord(${r.id})">刪除</button>
+          </td>
+        </tr>
+      `;
+    });
+
+  document.getElementById('total').innerText = selectedDate
+    ? `📅 ${selectedDate} 總熱量：${total} 大卡`
+    : `全部紀錄總熱量：${total} 大卡`;
+}
+
+// 頁面載入時顯示資料
+render();
+</script>
+</body>
+</html>
