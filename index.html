@@ -2,79 +2,172 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <title>熱量計算器</title>
+  <title>熱量紀錄系統（JS 物件 + localStorage）</title>
   <style>
-    body { font-family: Arial, sans-serif; background:#f7f7f7; padding:20px; }
-    h1 { text-align:center; }
-    .container { max-width:600px; margin:auto; background:#fff; padding:20px; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.1); }
-    .food-list button {
-      margin:5px; padding:10px 15px; border:none; border-radius:5px;
-      background:#4CAF50; color:white; cursor:pointer;
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      padding: 20px;
     }
-    .food-list button:hover { background:#45a049; }
-    .input-group { margin-top:15px; }
-    label { display:block; margin-bottom:5px; }
-    input { width:100%; padding:8px; }
-    .result { margin-top:20px; font-size:18px; }
-    .total { font-weight:bold; color:#d32f2f; }
+    .box {
+      max-width: 700px;
+      margin: auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,.1);
+    }
+    h1 {
+      text-align: center;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+    input, button {
+      padding: 8px;
+      margin-top: 5px;
+    }
+    button {
+      cursor: pointer;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background: #eee;
+    }
+    .del {
+      color: white;
+      background: #e53935;
+      border: none;
+      border-radius: 5px;
+      padding: 5px 10px;
+    }
   </style>
 </head>
+
 <body>
-  <div class="container">
-    <h1>🍱 熱量計算器</h1>
+<div class="box">
+  <h1>🍱 熱量紀錄系統</h1>
 
-    <p>點選食物 → 輸入克數 → 自動計算熱量</p>
+  <label>日期</label>
+  <input type="date" id="date">
 
-    <div class="food-list">
-      <button onclick="selectFood('白飯', 1.3)">白飯</button>
-      <button onclick="selectFood('雞胸肉', 1.65)">雞胸肉</button>
-      <button onclick="selectFood('炸雞', 2.6)">炸雞</button>
-      <button onclick="selectFood('蘋果', 0.52)">蘋果</button>
-      <button onclick="selectFood('香蕉', 0.89)">香蕉</button>
-    </div>
+  <label>食物名稱</label>
+  <input type="text" id="food" placeholder="例如：雞胸肉">
 
-    <div class="input-group">
-      <label>選擇的食物：</label>
-      <input type="text" id="foodName" readonly>
-    </div>
+  <label>熱量（大卡）</label>
+  <input type="number" id="calories" placeholder="例如：165">
 
-    <div class="input-group">
-      <label>食物重量（克）：</label>
-      <input type="number" id="grams" placeholder="請輸入克數" oninput="calculate()">
-    </div>
+  <button onclick="addRecord()">➕ 新增紀錄</button>
 
-    <div class="result">
-      本次熱量：<span id="calories">0</span> 大卡
-    </div>
+  <table>
+    <thead>
+      <tr>
+        <th>日期</th>
+        <th>食物</th>
+        <th>熱量</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody id="list"></tbody>
+  </table>
 
-    <div class="result total">
-      累積總熱量：<span id="totalCalories">0</span> 大卡
-    </div>
-  </div>
+  <h3 id="total"></h3>
+</div>
 
-  <script>
-    let currentCalPerGram = 0;
-    let total = 0;
+<script>
+/********************************
+ * JS 物件資料庫（localStorage）
+ ********************************/
+const STORAGE_KEY = 'calorie_records';
 
-    function selectFood(name, calPerGram) {
-      document.getElementById('foodName').value = name;
-      currentCalPerGram = calPerGram;
-      calculate();
-    }
+const database = {
+  records: JSON.parse(localStorage.getItem(STORAGE_KEY)) || []
+};
 
-    function calculate() {
-      const grams = document.getElementById('grams').value;
-      const calories = grams * currentCalPerGram || 0;
-      document.getElementById('calories').innerText = calories.toFixed(1);
-    }
+function saveToStorage() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(database.records));
+}
 
-    // 當使用者輸入完後，按 Enter 累加
-    document.getElementById('grams').addEventListener('change', () => {
-      const cal = parseFloat(document.getElementById('calories').innerText);
-      total += cal;
-      document.getElementById('totalCalories').innerText = total.toFixed(1);
-      document.getElementById('grams').value = '';
+/********************************
+ * 新增紀錄
+ ********************************/
+function addRecord() {
+  const date = document.getElementById('date').value;
+  const food = document.getElementById('food').value;
+  const calories = Number(document.getElementById('calories').value);
+
+  if (!date || !food || !calories) {
+    alert('請完整輸入 日期、食物、熱量');
+    return;
+  }
+
+  database.records.push({
+    id: Date.now(),   // 當作唯一 ID
+    date,
+    food,
+    calories
+  });
+
+  saveToStorage();
+
+  document.getElementById('food').value = '';
+  document.getElementById('calories').value = '';
+
+  render();
+}
+
+/********************************
+ * 刪除紀錄
+ ********************************/
+function deleteRecord(id) {
+  database.records = database.records.filter(r => r.id !== id);
+  saveToStorage();
+  render();
+}
+
+/********************************
+ * 顯示資料 + 總熱量
+ ********************************/
+function render() {
+  const tbody = document.getElementById('list');
+  const selectedDate = document.getElementById('date').value;
+
+  tbody.innerHTML = '';
+  let total = 0;
+
+  database.records
+    .filter(r => !selectedDate || r.date === selectedDate)
+    .forEach(r => {
+      total += r.calories;
+      tbody.innerHTML += `
+        <tr>
+          <td>${r.date}</td>
+          <td>${r.food}</td>
+          <td>${r.calories}</td>
+          <td>
+            <button class="del" onclick="deleteRecord(${r.id})">刪除</button>
+          </td>
+        </tr>
+      `;
     });
-  </script>
+
+  document.getElementById('total').innerText = selectedDate
+    ? `📅 ${selectedDate} 總熱量：${total} 大卡`
+    : `全部紀錄總熱量：${total} 大卡`;
+}
+
+// 頁面載入時顯示資料
+render();
+</script>
 </body>
 </html>
