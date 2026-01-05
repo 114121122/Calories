@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>熱量計算器</title>
+  <style>
+    body { font-family: Arial, sans-serif; background:#f7f7f7; padding:20px; }
+    h1 { text-align:center; }
+    .container { max-width:600px; margin:auto; background:#fff; padding:20px; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.1); }
+    .food-list button {
+      margin:5px; padding:10px 15px; border:none; border-radius:5px;
+      background:#4CAF50; color:white; cursor:pointer;
+    }
+    .food-list button:hover { background:#45a049; }
+    .input-group { margin-top:15px; }
+    label { display:block; margin-bottom:5px; }
+    input { width:100%; padding:8px; }
+    .result { margin-top:20px; font-size:18px; }
+    .total { font-weight:bold; color:#d32f2f; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🍱 熱量計算器</h1>
+
+    <p>點選食物 → 輸入克數 → 自動計算熱量</p>
+
+    <div class="food-list">
+      <button onclick="selectFood('白飯', 1.3)">白飯</button>
+      <button onclick="selectFood('雞胸肉', 1.65)">雞胸肉</button>
+      <button onclick="selectFood('炸雞', 2.6)">炸雞</button>
+      <button onclick="selectFood('蘋果', 0.52)">蘋果</button>
+      <button onclick="selectFood('香蕉', 0.89)">香蕉</button>
+    </div>
+
+    <div class="input-group">
+      <label>選擇的食物：</label>
+      <input type="text" id="foodName" readonly>
+    </div>
+
+    <div class="input-group">
+      <label>食物重量（克）：</label>
+      <input type="number" id="grams" placeholder="請輸入克數" oninput="calculate()">
+    </div>
+
+    <div class="result">
+      本次熱量：<span id="calories">0</span> 大卡
+    </div>
+
+    <div class="result total">
+      累積總熱量：<span id="totalCalories">0</span> 大卡
+    </div>
+  </div>
+
+  <script>
+    let currentCalPerGram = 0;
+    let total = 0;
+
+    function selectFood(name, calPerGram) {
+      document.getElementById('foodName').value = name;
+      currentCalPerGram = calPerGram;
+      calculate();
+    }
+
+    function calculate() {
+      const grams = document.getElementById('grams').value;
+      const calories = grams * currentCalPerGram || 0;
+      document.getElementById('calories').innerText = calories.toFixed(1);
+    }
+
+    // 當使用者輸入完後，按 Enter 累加
+    document.getElementById('grams').addEventListener('change', () => {
+      const cal = parseFloat(document.getElementById('calories').innerText);
+      total += cal;
+      document.getElementById('totalCalories').innerText = total.toFixed(1);
+      document.getElementById('grams').value = '';
+    });
+  </script>
+</body>
+</html>
